@@ -16,7 +16,7 @@ Implementation: one self-contained `index.html`, HTML5 Canvas and vanilla JavaSc
 - **P:** pause/resume. Click or tap the track to resume. Losing focus pauses automatically.
 - **M** or the sound button: mute/unmute. Audio starts after your first interaction.
 - **Mobile:** touch anywhere on the left half of the game canvas to spawn a floating joystick. Drag toward the desired heading; distance sets throttle. Centre the stick or release to coast. Pull against the truck’s nose to brake and then reverse. The base stays at the initial contact and the knob follows your thumb, capped at full throttle.
-- **Nitro:** touch and hold the right half of the game canvas with another finger. Steering and nitro track separate pointer IDs, so you can use both together. Fingers retain their original roles when crossing halves. Release/cancellation clears that finger; pausing, focus loss, and resizing clear all gestures.
+- **Nitro:** press and hold the solid round **NITRO** button fixed at the bottom-right with another finger. It lights yellow while held and shows the remaining tank around its rim. Touches elsewhere on the right do nothing. Sliding off the button stops boost; sliding back on resumes it until release. Steering and nitro track separate pointer IDs. Release/cancellation clears that finger; pausing, focus loss, rotation and resizing clear all gestures.
 - The joystick uses a 58 CSS-pixel radius and 12% centre deadzone; both are adjustable in TUNING. Its base and knob are Canvas drawings; no DOM driving buttons remain.
 
 Follow the circuit through every checkpoint in order and cross the checkered straight to complete each lap. The orange-and-bone Oxide truck and orange marker identify the player. Mud reduces speed and grip, offroad slows the truck, and raised strips kick the suspension. Rocks and perimeter barriers bounce trucks; trucks can bump one another.
@@ -27,7 +27,7 @@ Between races, spend cash on five purchasable levels per upgrade. Each starts at
 
 ## Implementation notes
 
-All tuning constants appear in the clearly marked **TUNING CONSTANTS** section at the start of the script. `TRACKS` contains centreline point lists, widths, mud and bump indices, plus mirrored-track source references. The display canvas is 960 × 720 with a fixed camera and proportional window scaling. An offscreen color-coded surface canvas is sampled for truck collision and terrain physics; a separate offscreen canvas caches the procedural artwork. Simulation uses a 1/60-second accumulator with a frame-delta cap. Rendering follows the display refresh rate (60fps on a 60Hz display).
+All tuning constants appear in the clearly marked **TUNING CONSTANTS** section at the start of the script. `TRACKS` contains centreline point lists, widths, mud and bump indices, plus mirrored-track source references. The racetrack uses fixed 960 × 720 world coordinates; the display canvas fills the landscape viewport, scaling the circuit to the screen height and extending scenery into any extra side width. An offscreen color-coded surface canvas is sampled into a reusable pixel buffer after construction or prop destruction; physics reads that buffer instead of calling getImageData for every truck sample. Separate offscreen canvases cache the entire procedural track and viewport-sized static background. Simulation uses a fixed 1/60-second accumulator with at most five catch-up steps; rendering targets 60fps and does not redraw static menus.
 
 Audio consists of a continuous synthesized engine oscillator and short synthesized effect oscillators. All interface typography uses local system fonts. The entire game can run offline from the single HTML file.
 
@@ -39,11 +39,11 @@ The generated title art is decorative; title semantics, instructions, buttons, H
 
 ## Control redesign (supersedes the original touch-button requirement)
 
-The original requested specification above is preserved as supplied. The current mobile-led control scheme replaces every on-screen driving button with a floating heading-and-throttle joystick on the left half of the game canvas and hold-to-boost on the right half. Keyboard arrows/WASD and Space remain available on desktop. Menu and sound buttons remain ordinary interface controls.
+The original requested specification above is preserved as supplied. The current mobile-led control scheme replaces every on-screen driving button with a floating heading-and-throttle joystick on the left half of the full-screen game canvas and one fixed round Canvas NITRO button at the bottom-right. The former invisible right-half boost zone has been removed. Keyboard arrows/WASD and Space remain available on desktop. Menu and sound buttons remain ordinary interface controls.
 
 ## Fixed-view fun pack and MUDMAN palette
 
-The camera is locked: the full circuit is always visible on the 960×720 canvas. Window scaling preserves its aspect ratio; there is no scrolling, camera following or zoom. The floating joystick and keyboard controls remain unchanged.
+The camera is locked: the full 960×720 circuit is always visible, centred in a full-screen canvas with decorative side grounds. Scaling preserves the track’s aspect ratio; there is no scrolling, camera following or zoom. The floating joystick and keyboard controls remain unchanged.
 
 - **Jump ramps:** cross in the arrow/course direction above 65 speed units for 0.68 seconds of air time. Airborne trucks pass over props and other trucks. Landing on a firm surface, aligned with travel and without hitting a wall, grants a 22-unit speed bonus and a brief raised speed cap.
 - **Oil slicks:** dark slicks trigger a short spin and very low lateral grip, with a cooldown to avoid retriggering each step.
@@ -57,7 +57,7 @@ Track scenery includes a MUDMAN start gantry, grandstand spectators, flags, bann
 
 ## Landscape-first orientation
 
-Play horizontally. In portrait orientation, the game and its controls are hidden behind a “Rotate your phone” prompt. Simulation and sound pause, held inputs are cleared, and the race resumes in landscape (a manually paused race stays paused). Rotation never resets the race or season. The fixed 960×720 canvas scales to the largest proportional fit in the landscape viewport using dynamic viewport height; wider screens retain side gutters so the entire track stays visible without cropping or distortion. HUD remains within the fixed canvas; menus size themselves to the fitted game surface, including short landscape phones.
+Play horizontally. In portrait orientation, the game and its controls are hidden behind a “Rotate your phone” prompt. Simulation and sound pause, held inputs are cleared, and the race resumes in landscape (a manually paused race stays paused). Rotation never resets the race or season. The 960×720 play field scales to the landscape screen height using dynamic viewport sizing. Wider screens show extended ground and scenery instead of black side bars; near-square landscape screens fall back to proportional fit so the circuit never crops or stretches. The backing canvas uses devicePixelRatio capped at 2. HUD stays aligned with the circuit, menus remain centred over the play field, and controls map correctly across the full screen. Starting a race from a user tap requests fullscreen where the Fullscreen API is available; denied or unavailable fullscreen keeps the same full-viewport layout.
 
 ## Selectable AI skill
 
@@ -80,3 +80,12 @@ Use **Top times** on the title or results screen to browse a separate board for 
 After a qualifying finish, enter a name (1–20 characters) and choose **Save time**, or **Skip** to continue without recording it. The last saved name is offered next time. Nonqualifying finishes proceed directly to results. Viewing boards and returning to results does not award prizes again or interrupt season progression.
 
 Boards and the last entered name are stored in the browser's localStorage under `mudman.topTimes.v1`. They survive reloads, browser restarts and New Season on the same browser/origin, unless browser data is cleared. Storage is validated on load, names are escaped for display, and unavailable storage falls back to session-only records with a notice on the board. A copied file, different browser/origin or private session may have separate storage.
+
+## Mobile rendering and loading
+
+- All embedded title artwork is loaded and decoded behind a brief loading state before the title and Start button appear. Every asset stays inside the HTML file.
+- Dirt, kerbs, markings, hazards, stands, gantry, flags and other scenery are pre-rendered once per race. A viewport-sized static cache combines that layer with the extended side grounds; it is rebuilt only on race start or viewport/fullscreen resize, then copied once per rendered frame.
+- Trucks, pickups, destructible props and the nitro button use pre-rendered sprites. The HUD is cached at 10Hz and only its top/bottom strips are composited. Trucks, particles and touch controls still animate at the 60fps render target. Static menu screens do not redraw continuously.
+- Physics reuses waypoint and control scratch objects, a standings array and a bounded pool of 180 particle objects. No runtime surface readbacks, fresh gradients or shadowBlur occur in the steady-state render/simulation loop. Prop destruction updates the surface buffer as an event.
+
+Chromium checks cover actual multi-touch steering and button-only nitro (including drag-off, release/cancel and keyboard controls), successful fullscreen entry and denied-fullscreen fallback, DPR limiting, landscape/portrait resizing, artwork readiness, zero surface readbacks/static rebuilds during steady-state frames, and leaderboard persistence. All 72 AI track/skill runs completed four laps; controlled player checkpoint tests also exercised complete eight-race seasons and upgrades at each skill. Desktop CPU-throttling is a performance proxy, not a physical Android frame-rate measurement.
