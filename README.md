@@ -1,4 +1,4 @@
-# RUT
+# RUT — Neon Night Arcade
 
 An original, single-screen dirt truck racing game. Open `index.html` directly in a modern browser. No installation, server, network access or assets are required.
 
@@ -19,23 +19,40 @@ Implementation: one self-contained `index.html`, HTML5 Canvas and vanilla JavaSc
 - **Nitro:** press and hold the solid round **NITRO** button fixed at the bottom-right with another finger. It lights yellow while held and shows the remaining tank around its rim. Touches elsewhere on the right do nothing. Sliding off the button stops boost; sliding back on resumes it until release. Steering and nitro track separate pointer IDs. Release/cancellation clears that finger; pausing, focus loss, rotation and resizing clear all gestures.
 - The joystick uses a 58 CSS-pixel radius and 12% centre deadzone; both are adjustable in TUNING. Its base and knob are Canvas drawings; no DOM driving buttons remain.
 
-Cross the start line to arm the first lap, then drive through every ordered checkpoint gate and cross the finite finish line in the forward direction to complete each lap. Nearness to the line never counts; a missed checkpoint must be revisited. The orange-and-bone Oxide truck and orange marker identify the player. Mud reduces speed and grip, offroad slows the truck, and raised strips kick the suspension. Rocks and perimeter barriers bounce trucks; trucks can bump one another.
+Cross the start line to arm the first lap, then drive through every ordered checkpoint gate and cross the finite finish line in the forward direction to complete each lap. Nearness to the line never counts; a missed checkpoint must be revisited. The selected truck and livery identify the player; the position marker remains orange. Mud reduces speed and grip, offroad slows the truck, and raised strips kick the suspension. Rocks and perimeter barriers bounce trucks; trucks can bump one another.
 
 The race concludes when the player completes four laps. Trucks that already finished rank by their finish time; remaining trucks rank by circuit progress. Results show unfinished drivers as “Still racing.” Prizes are $600 / $390 / $220 / $100. Pickups and prizes count toward season earnings; spending does not subtract from that statistic.
 
-Between races, spend cash on five purchasable levels per upgrade. Each starts at $140 and rises by a factor of 1.75 per level (rounded). Top Speed adds 8% of base speed per level; Acceleration adds 14%; Grip adds 16%; Nitro Tank adds 0.8 seconds to its initial 4 seconds. Nitro refills at each race start. AI pace increases across the season while tracks narrow and hazards increase. Three consecutive fourth-place finishes end the season early. Finishing race eight also opens the summary. **New Season** resets cash, upgrades, results and statistics. Season progress lives in memory for this play session; top-times records persist separately in localStorage.
+Between races, spend cash on five purchasable levels per upgrade. Each starts at $140 and rises by a factor of 1.75 per level (rounded). Top Speed adds 8% of base speed per level; Acceleration adds 14%; Grip adds 16%; Nitro Tank adds 0.8 seconds to its initial 4 seconds. Nitro refills at each race start. AI pace increases across the season while tracks narrow and hazards increase. Three consecutive fourth-place finishes end the season early. Finishing race eight also opens the summary. **New Season** resets race statistics and the last-place streak, returning to the garage. Cash, upgrades, parts, liveries, daily progress, top times and ghosts persist. Season progress is saved after completed races.
 
 ## Implementation notes
 
 All tuning constants appear in the clearly marked **TUNING CONSTANTS** section at the start of the script. `TRACKS` contains centreline point lists, widths, mud and bump indices, plus mirrored-track source references. The racetrack uses fixed 960 × 720 world coordinates; the display canvas fills the landscape viewport, scaling the circuit to the screen height and extending scenery into any extra side width. An offscreen color-coded surface canvas is sampled into a reusable pixel buffer after construction or prop destruction; physics reads that buffer instead of calling getImageData for every truck sample. Separate offscreen canvases cache the entire procedural track and viewport-sized static background. Simulation uses a fixed 1/60-second accumulator with at most five catch-up steps; rendering targets 60fps and does not redraw static menus.
 
-Audio consists of a continuous synthesized engine oscillator and short synthesized effect oscillators. All interface typography uses local system fonts. The entire game can run offline from the single HTML file.
+Audio uses synthesized oscillators and a reusable synthesized noise buffer. All interface typography uses local system fonts. The entire game can run offline from the single HTML file.
 
-## Visual identity
+## Neon Night Arcade: garage-first flow
 
-RUT uses an original screen-printed rally identity: burnt orange, bone, charcoal and sage, with tire-cut title lettering and a generated rally illustration embedded directly as a WebP data URI in `index.html`. The image requires no separate file or network request. Race art remains procedural Canvas drawing. Four numbered, two-tone liveries identify the field: Oxide (player, orange/bone), Tidal (Reed, turquoise/charcoal), Ember (Flint, vermilion/bone), and Dusk (Moss, lavender/charcoal). Detailed truck sprites are cached in canvases created by the same script. Cut-corner controls and pickups, a segmented nitro gauge, trackside stakes, clay textures, and a truck preview in the pit shed extend the visual system through the game.
+The game opens in the garage after both embedded illustrations have decoded. Choose one of four rides—**Oxide**, **Tidal**, **Ember**, **Dusk**—and preview its three liveries on a large, animated three-quarter hero. All four trucks share the existing handling and upgrade tune; their personalities are visual and sonic. Swatches repaint the hero immediately, including racing numbers, decals and progressively richer roof lights, bull bar and flag accessories. The selected palette also repaints the in-race player sprite. The first skin is free, the second unlocks with a win in that truck, and the third after six completed races in it; crates can unlock either early. Locked previews explain their requirement and cannot enter a race.
 
-The generated title art is decorative; title semantics, instructions, buttons, HUD, and game state remain native HTML or Canvas text. The complete game remains one standalone HTML file with no external dependencies.
+An original embedded arena illustration, generated neutral truck artwork with cached procedural recolouring, indigo panels, teal/orange trim, rounded controls and a yellow RACE button establish the night identity. The centre podium has suspension bounce, headlight glow and exhaust puffs. The season road and seven-day calendar occupy the left card; track and Rookie/Pro/Ace selection occupy the right. Garage and Top Board tabs remain at the bottom. Menus use the entire landscape viewport, including wide screens; short landscape layouts compact the cards. All illustrations are embedded WebP data URIs; nothing is downloaded at runtime.
+
+Every race has a visible **Ⅱ / EXIT** control. Pause offers Resume, Sound/Settings and Exit to Garage. Exit discards that unfinished race, including cash collected during it, without adding a finish, record, ghost, crate or season round. Every sub-screen has a garage return. Keyboard and touch driving controls are unchanged.
+
+The eight original layouts retain their geometry and surfaces. Meadow green, canyon orange, swamp teal, snow blue-white and later violet/blue/pink families culminate in a full-neon finale. Floodlights, luminous kerbs, banners, stands and dark scenery are baked into the static track cache once per race. Dirt and hazards retain distinct readable surface colours.
+
+## Persistent rewards and garage economy
+
+Cash remains the only currency. The profile at `rut.neon.profile.v1` saves wallet, five-level upgrades, truck/skin selection, unlocks, per-truck race/win totals, upgrade-part inventory, crates, season statistics, difficulty, player name and sound settings. Existing top boards and ghosts remain under their original storage key. Unavailable storage falls back to the current session.
+
+- **Mystery Crates:** every podium awards one. Season rounds 2, 4, 6 and 8 each add a crate and $100 / $180 / $260 / $500 respectively. Four taps open a crate; each tap can raise Common → Rare → Epic with escalating shake, pitch and reveal fanfare. Prizes are cash, upgrade parts or an unowned livery. A part fits one free level of its matching upgrade in the shed; it is an item, not a second currency. Interrupted crate rituals resume from their saved tap/rarity and pay only once.
+- **First daily win:** the first win per UTC day doubles the normal $600 first-place prize. Other payouts and season gifts are additional; subsequent wins that day pay normally.
+- **Seven-day streak:** the first garage visit each UTC day advances the calendar by one, paying $40 / $60 / $80 / $100 / $120 / $160 / $240; day seven also grants a crate. Missing days pauses progress and never resets it. After day seven the calendar cycles.
+- **Season road:** eight completed races, with gifts pinned after rounds 2/4/6/finale. Track selection chooses the next circuit independently of the round counter. Three consecutive last places still end the season early. Starting another season preserves earned inventory and upgrades.
+
+## Synthesized sound
+
+All audio is WebAudio synthesis. Each ride has its own engine waveform, pitch and horn motif; changing a skin plays its rev. UI taps/swipes/confirms, rising crate taps and rarity reveals, coin tally, speed-following engine, nitro whoosh, slide screech, mud splatter, crash thud, checkpoint/lap/final-lap/countdown cues and win/lose stingers accompany play. Short neon-synth garage and driving loops start only after a user gesture. Settings include player name, volume and mute; muted/paused/hidden states suspend the appropriate sounds. No audio files are embedded or fetched.
 
 ## Control redesign (supersedes the original touch-button requirement)
 
@@ -53,15 +70,15 @@ The camera is locked: the full 960×720 circuit is always visible, centred in a 
 
 Ramp, oil, boost, water, cone and barrel types have distinct codes on the offscreen surface canvas. Smashing a prop restores the underlying surface from a cached base mask. All effects run within the fixed simulation timestep. Collectibles are spaced away from new hazards for readability.
 
-Track scenery includes a MUDMAN start gantry, grandstand spectators, flags, banners, tyre stacks, gravel and tire ruts. Art and interface use Deep Mud `#4B2E1F`, Clay Brown `#8A5A3B`, Dust Tan `#C69B6D`, Nitro Orange `#FF6A00`, Turbo Yellow `#FFC928`, Track Teal `#1DA7A1`, Night Asphalt `#263238`, and Cloud White `#F3F1E8`. Existing embedded title artwork remains self-contained. No external assets, libraries or network requests are required.
+Track scenery includes a MUDMAN start gantry, grandstand spectators, flags, banners, tyre stacks, gravel and tire ruts. Art and interface use Deep Mud `#4B2E1F`, Clay Brown `#8A5A3B`, Dust Tan `#C69B6D`, Nitro Orange `#FF6A00`, Turbo Yellow `#FFC928`, Track Teal `#1DA7A1`, Night Asphalt `#263238`, and Cloud White `#F3F1E8`. The garage’s embedded arena and truck artwork remains self-contained. No external assets, libraries or network requests are required.
 
 ## Landscape-first orientation
 
-Play horizontally. In portrait orientation, the game and its controls are hidden behind a “Rotate your phone” prompt. Simulation and sound pause, held inputs are cleared, and the race resumes in landscape (a manually paused race stays paused). Rotation never resets the race or season. The 960×720 play field scales to the landscape screen height using dynamic viewport sizing. Wider screens show extended ground and scenery instead of black side bars; near-square landscape screens fall back to proportional fit so the circuit never crops or stretches. The backing canvas uses devicePixelRatio capped at 2. HUD stays aligned with the circuit, menus remain centred over the play field, and controls map correctly across the full screen. Starting a race from a user tap requests fullscreen where the Fullscreen API is available; denied or unavailable fullscreen keeps the same full-viewport layout.
+Play horizontally. In portrait orientation, the game and its controls are hidden behind a “Rotate your phone” prompt. Simulation and sound pause, held inputs are cleared, and the race resumes in landscape (a manually paused race stays paused). Rotation never resets the race or season. The 960×720 play field scales to the landscape screen height using dynamic viewport sizing. Wider screens show extended ground and scenery instead of black side bars; near-square landscape screens fall back to proportional fit so the circuit never crops or stretches. The backing canvas uses devicePixelRatio capped at 2. HUD stays aligned with the circuit, menus span the full landscape viewport, and controls map correctly across the full screen. Starting a race from a user tap requests fullscreen where the Fullscreen API is available; denied or unavailable fullscreen keeps the same full-viewport layout.
 
 ## Selectable AI skill
 
-Choose **Rookie**, **Pro**, or **Ace** on the title screen before starting a season. Rookie is the default. The chosen profile is shown in the HUD, garage, results and summary and stays fixed through the season. **New Season** retains that choice while resetting race progress, money and upgrades. **Choose skill** on the summary returns to the title selector.
+Choose **Rookie**, **Pro**, or **Ace** in the garage before racing. Rookie is the default. The chosen profile appears in the HUD, garage, results and summary and is saved with the profile. All existing AI coefficients remain unchanged.
 
 | Profile | Base AI speed multiplier | Steering gain / grip multiplier | Mistake chance per second | Rubber-band cap | Nitro behavior |
 | --- | --- | --- | --- | --- | --- |
@@ -75,7 +92,7 @@ Automated Chromium checks covered all three AI drivers finishing all eight track
 
 ## Top-times boards
 
-Use **Top times** on the title or results screen to browse a separate board for each of the eight tracks, including mirrored layouts. Each board keeps the five fastest player finishes across all AI skills, showing rank, player name, complete four-lap race time (`minutes:seconds.milliseconds`), and skill. Lower times rank higher; an equal time does not displace the oldest record when the board is full.
+Use **TOP BOARD** in the garage or results screen to browse a separate board for each of the eight tracks, including mirrored layouts. Each board keeps the five fastest player finishes across all AI skills, showing rank, player name, complete four-lap race time (`minutes:seconds.milliseconds`), and skill. Lower times rank higher; an equal time does not displace the oldest record when the board is full.
 
 After a qualifying finish, enter a name (1–20 characters) and choose **Save time**. A new track best and its ghost are saved immediately under your previous name (or YOU); **Skip** keeps that best run under the default name. For other qualifying times, Skip continues without adding a board entry. The last saved name is offered next time. Nonqualifying finishes proceed directly to results. Viewing boards and returning to results does not award prizes again or interrupt season progression.
 
@@ -83,7 +100,7 @@ Boards and the last entered name are stored in the browser's localStorage under 
 
 ## Mobile rendering and loading
 
-- All embedded title artwork is loaded and decoded behind a brief loading state before the title and Start button appear. Every asset stays inside the HTML file.
+- Both embedded garage illustrations are loaded and decoded behind a brief loading state before the garage and RACE button appear. Every asset stays inside the HTML file.
 - Dirt, kerbs, markings, hazards, stands, gantry, flags and other scenery are pre-rendered once per race. A viewport-sized static cache combines that layer with the extended side grounds; it is rebuilt only on race start or viewport/fullscreen resize, then copied once per rendered frame.
 - Trucks, pickups, destructible props and the nitro button use pre-rendered sprites. The HUD is cached at 10Hz and only its top/bottom strips are composited. Trucks, particles and touch controls still animate at the 60fps render target. Static menu screens do not redraw continuously.
 - Physics reuses waypoint and control scratch objects, a standings array and a bounded pool of 180 particle objects. No runtime surface readbacks, fresh gradients or shadowBlur occur in the steady-state render/simulation loop. Prop destruction updates the surface buffer as an event.
@@ -103,3 +120,7 @@ The fastest newly completed run on each track is recorded at 10Hz as timestamp, 
 Older version-1 board entries are retained. They have no replay data, so the fastest run completed after this update supplies the ghost until replaced by a faster recorded run. The board best remains the timer benchmark; legacy split comparisons are explicitly estimated. New Season keeps both boards and ghosts. Storage-disabled or full browsers retain them only in memory for the current session.
 
 Validation for this update used the actual game script and an offline Canvas/DOM harness: a complete physics-driven player race finished only after crossing the final line; shortcut/proximity/reverse/outside-line cases were rejected; AI finishes did not end a waiting player's race; same-tick crossing order, signed lap deltas, ghost storage/reload, record migration and bounded recording were checked. All 72 AI track/skill runs completed four laps. Browser UI validation was unavailable because this session did not grant local socket/network permission. Controls, fullscreen handling, static-layer caches, DPR cap and particle pooling are unchanged.
+
+## Neon redesign verification
+
+The offline native-Canvas/DOM/WebAudio harness exercises garage-first loading, all twelve live hero/race palettes, locked-skin gates, four distinct truck voices, settings, pause/resume and abandoned-race rollback; crate tap persistence and cash/part/livery payouts; daily-win and paused-streak rules; wallet/upgrades/unlocks surviving reload; a full physics-driven season; and every AI finishing each track at each skill. The original TUNING values, eight layout definitions, AI skill table and joystick implementation are compared against the preceding version. This is offline simulation and rendering verification, not a measured physical Android frame-rate claim.
